@@ -8,11 +8,10 @@ class Strain:
         self.c = 0.173        #division rate
         self.Q = 1         #a voir, cmax/c
         self.spores = 0
-        self.vg = 1000
-        self.X = self.spores + self.vg        #population
+        self.vg = 10**8       #population
         self.alpha = 0.5
     def __str__(self):
-        return "Name : " + self.name + ", Population X = " + str(self.X)
+        return "Name : " + self.name + ", Population X = " + str(self.vg + self.spores)
     def __repr__(self):
         return self.__str__()
 
@@ -22,8 +21,6 @@ def copyStrains(strains):
     for s in strains:
         resultat.append(copy(s))
     return resultat
-
-
 
 #global parameters
 data = []  #stockage à chaque temps dt
@@ -43,16 +40,28 @@ T_sur = 200
 
 def survival_vg(time_starvation, souche):
     global T_sur
-    nu = 1.1 - 2*souche.c
-    beta = 3.1 - 4*souche.c
-    return (np.exp((-nu*time_starvation)**(beta)) - np.exp((-nu*T_sur)**(beta)))/(1 - np.exp((-nu*T_sur)**(beta)))
+    nu = 1.1 - (2 * souche.c)
+    beta = 3.1 - (4 * souche.c)
+    return (np.exp(-(nu*time_starvation)**(beta)) - np.exp(-(nu*T_sur)**(beta)))/(1 - np.exp(-(nu*T_sur)**(beta)))
 
-def initialisation() :
+def initialisation():
     a = Strain()
     strains.append(a)
 
+def main_step(n, dt, n_starv):
+    global Time_passed, R, tau_counter, Time_rich, Time_starvation
+    i = 0
+    while i < n * dt:
+        if R > Rstar:
+            rich_step(dt)
+            i += dt
+        else:
+            starvation_step(n_starv * dt)
+            i += n_starv * dt
+            R = 10**8
+            tau_counter = 0
 
-def starvation_step(dt):
+def starvation_step(t):
     global Time_passed, Time_starvation, Time_rich
 
     #stockage
@@ -63,16 +72,15 @@ def starvation_step(dt):
 
     for s in strains: 
         #Calcul des conséquences de l'arrivée de la starvation
-        if Time_starvation == 0:            
-            s.spores = s.alpha * spore_stalk * s.vg
-            s.vg = (1 - s.alpha) * s.vg
+        s.spores = s.alpha * spore_stalk * s.vg
+        s.vg = (1 - s.alpha) * s.vg
 
         #Evolution durant starvation
-        s.spores -= delta * s.spores        
-        s.vg -= survival_vg(Time_starvation, s) * s.vg
+        s.spores -= delta * s.spores * t
+        s.vg = survival_vg(t, s) * s.vg
 
-    Time_starvation += dt
-    Time_passed += dt
+    Time_starvation += t
+    Time_passed += t
 
 
 def rich_step(dt):
@@ -87,7 +95,6 @@ def rich_step(dt):
 
     #spores germination
     if tau_counter >= tau and state['Time_passed']!=0:
-        print("Germination")
         for s in strains:
             #On calcule le flux de nb de spores germinant en vg
             nu = 1.1 - 2*s.c
@@ -98,7 +105,7 @@ def rich_step(dt):
             ###Sens inverse :
             # flow = s.vg * s.alpha #!!! alpha bien par rapport à vg slmt ?
             # s.vg -= flow #On enlève la part correspondant aux cellules du sporocarpe, qui ne deviennent pas des endospores et ne se reproduisent pas (donc négligeables)
-            # s.spores += flow * spore_stalk
+            # s.spores += flow * spocre_stalk
 
         tau_counter = -1
     
@@ -111,9 +118,10 @@ def rich_step(dt):
 
     #calcul - population
     for s in strains:
-        sommeTit += s.Q * s.c * s.X
-        s.X += s.c * kRGab * s.X * dt
-        if tau_counter < tau: s.X -= delta * s.X * s.alpha * dt
+        X = s.vg + s.spores
+        sommeTit += s.Q * s.c * X
+        s.vg += s.c * kRGab * X * dt
+        if s.spores > 0: s.spores -= delta * s.spores * dt
 
     # calcul - ressource
     R += - kRGab * sommeTit
@@ -128,9 +136,8 @@ def rich_step(dt):
 
 
 initialisation() #Main
-for i in range(1,600) :
-    rich_step(1)
-Pop1R_plot = [[],[]]
+main_step(400, 0.5, 4)
+Pop1R_plot = [[],[],[],[]]
 
 def plot_popstrain(strain_name):
     strains_list = data[0]["strains"]
@@ -138,20 +145,27 @@ def plot_popstrain(strain_name):
     for j in range(len(strains_list)):
         if strains_list[j]==strain_name:
             index_strain = j
+    t = []
     for i in range(len(data)):
         Pop1R_plot[0].append(data[i]["R"])
-        Pop1R_plot[1].append(data[i]["strains"][index_strain].X)
+        Pop1R_plot[1].append(data[i]["strains"][index_strain].vg + data[i]["strains"][index_strain].spores)
+        Pop1R_plot[2].append(data[i]["strains"][index_strain].vg)
+        Pop1R_plot[3].append(data[i]["strains"][index_strain].spores)
+        t.append(data[i]["Time_passed"])
+
     
-    t = np.arange(len(Pop1R_plot[0]))
     
     #plt.scatter(t, Pop1R_plot[0], label='Ressources')
     #plt.scatter(t, Pop1R_plot[1], label="Population")
 
-    plt.plot(t, Pop1R_plot[0])
-    plt.plot(t, Pop1R_plot[1])
+    #plt.plot(t, Pop1R_plot[0], label="Ressources")
+    #plt.plot(t, Pop1R_plot[1], label="Population")
+    plt.plot(t, Pop1R_plot[2], label="Vege")
+    plt.plot(t, Pop1R_plot[3], label="Spores")
 
-print(plot_popstrain('Strain basic'))
+    plt.show()
+    plt.legend(['First line', 'Second line'])
 
-print(data)
+plot_popstrain('Strain basic')
 
 print("helloworld")
