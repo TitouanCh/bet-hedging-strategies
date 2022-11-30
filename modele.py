@@ -8,13 +8,15 @@ class Strain:
         self.c = 0.173        #division rate
         self.Q = 1         #a voir, cmax/c
         self.spores = 0
-        self.vg = 1000
+        self.vg = 10**8
         self.X = self.spores + self.vg        #population
         self.alpha = 0.5
     def __str__(self):
-        return "Name : " + self.name + ", Population X = " + str(self.X)
+        return "Name : " + self.name + ", Population X = " + str(self.X) + ", alpha : " + str(self.alpha)
     def __repr__(self):
         return self.__str__()
+    def modifparam(self, investment):
+        self.alpha = investment
 
 # Copy strains without reference
 def copyStrains(strains):
@@ -48,8 +50,12 @@ def survival_vg(time_starvation, souche):
     return (np.exp((-nu*time_starvation)**(beta)) - np.exp((-nu*T_sur)**(beta)))/(1 - np.exp((-nu*T_sur)**(beta)))
 
 def initialisation() :
-    a = Strain()
-    strains.append(a)
+    genotype = np.linspace(0,1,1001)
+    for i in range(0, 1001):
+        a = Strain()
+        g = genotype[i]
+        a.modifparam(g)
+        strains.append(a)
 
 
 def starvation_step(dt):
@@ -124,6 +130,19 @@ def rich_step(dt):
     if tau_counter >= 0: tau_counter += dt
     
     Time_rich += dt
+
+
+
+
+#fig4
+
+# B
+#def starvtime_exp():
+
+    t = np.linspace(0, 400,401)
+    plt.plot(t, ((1/50)*np.exp(-(1/50)*t)))
+    plt.show()
+
 
 
 
