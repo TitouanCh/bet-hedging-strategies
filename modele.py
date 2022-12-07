@@ -44,13 +44,36 @@ T_sur = 200
 
 def survival_vg(time_starvation, souche):
     global T_sur
-    nu = 1.1 - (2 * souche.c)
+    mu = 1.1 - (2 * souche.c)
     beta = 3.1 - (4 * souche.c)
-    return (np.exp(-(nu*time_starvation)**(beta)) - np.exp(-(nu*T_sur)**(beta)))/(1 - np.exp(-(nu*T_sur)**(beta)))
+    return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
 
 """ def initialisation():
     a = Strain()
     strains.append(a) """
+
+def Normale_density(x, mu, sigma):
+    return (np.pi*sigma) * np.exp(-0.5*((x-mu)/sigma)**2)
+
+def Normale_starvationtime_randomselection(parameters_mu_sigma, step=0.05):                  #(OLD : domain = borne sup (borne inf = 0), size ->~= precision)
+    mu = parameters_mu_sigma[0]
+    sigma = parameters_mu_sigma[1]
+    
+    x=0
+    prob_table = [Normale_density(x, mu, sigma)]
+    x+=1
+
+    while prob_table[-1]>=0.001:
+        prob_table.append(Normale_density(x, mu, sigma))
+        x+=step
+
+    i = random.randint(0, len(prob_table))
+    return prob_table[i]
+
+""" print(Normale_starvationtime_randomselection([0,1]))
+tab = Normale_starvationtime_randomselection([0,1])
+plt.plot(np.arange(len(tab)), tab)
+plt.show() """
 
 # def main_step(n, dt, n_starv): #
 #     global Time_passed, R, tau_counter, Time_rich, Time_starvation
@@ -65,7 +88,7 @@ def survival_vg(time_starvation, souche):
 #             R = 10**8
 #             tau_counter = 0
 
-def main_step(n, dt, n_starv): #
+def main_step(n, dt, parameters, density=Normale_starvationtime_randomselection, n_starv=None): #
     global Time_passed, R, tau_counter, Time_rich, Time_starvation
     i = 0
     while i < n * dt:
@@ -74,15 +97,16 @@ def main_step(n, dt, n_starv): #
             i += dt
         else:
             #normale_starvation()
+            n_starv = density(parameters)
             starvation_step(n_starv * dt) #Remplacer par fonction répartition - "the growth phase starts with the arrival of a pulse of ressources"
             i += n_starv * dt
             R = 10**8 #Pulse of resources
             tau_counter = 0
 
-def normale_starvation(sigma):
+#def normale_starvation(sigma):
     #return un temps de starvation -> voir temps moyen de starvation
 
-    pass
+#    pass
 
 def starvation_step(t):
     global Time_passed, Time_starvation, Time_rich
@@ -163,22 +187,6 @@ main_step(400, 0.5, 4)
 Pop1R_plot = [[],[],[],[]] """
 Pop1R_plot = [[],[],[],[]]
 
-def Normale_density(x, mu, sigma):
-    return (np.pi*sigma) * np.exp(-0.5*((x-mu)/sigma)**2)
-
-def Normale_starvationtime_randomselection(parameters_mu_sigma, step=1):                  #(OLD : domain = borne sup (borne inf = 0), size ->~= precision)
-    mu = parameters_mu_sigma[0]
-    sigma = parameters_mu_sigma[1]
-    
-    prob_table = []
-    x=0
-    while prob_table[-1]>=0.001:
-        prob_table.append(Normale_density(x, mu, sigma))
-        x+=step
-
-    i = random.randint(0, len(prob_table))
-    return prob_table[i]
-
 
 def Exp_starvationtime(lambdaST, size, domain):
     pass
@@ -190,25 +198,36 @@ def Simulation_and_Selection(parameters, density=Normale_starvationtime_randomse
     global winners
     
     graph_return = []
-    tmax = 2*108
+    #tmax = 2*108
+    tmax = 10 ####
     dt = 1 #h
 
-    main_step(tmax, dt, density(parameters))
+    main_step(tmax, dt, parameters, density)
 
     counting_survivors = []
     for s in range(len(strains)):
         counting_survivors.append(data[-1]["strains"][s].spores + data[-1]["strains"][s].vg)
-    
+
     best = 0
     for i in range(len(counting_survivors)):
         if counting_survivors[best]<=counting_survivors[i]:
             best = i
 
     winners.append(strains[best].alpha)
-    pass
+    return winners
 
 
-def plot_repartition(parameters, density='Normale'):      # parameters est un tableau car les différentes lois n'ont pas besoin du même nombre de variables
+strains_id = np.linspace(0, 10, 11)
+alphas = np.linspace(0, 1, 11)
+for i in range(len(strains_id)):
+        strain = Strain()
+        print(strains)
+        strain.alpha = alphas[i]
+        strains.append(strain)
+print('Simulation_and_Selection', Simulation_and_Selection([0,1]))
+
+
+def plot_repartition(nbstrains, density='Normale'):      # parameters est un tableau car les différentes lois n'ont pas besoin du même nombre de variables
     global winners
     global strains
 
@@ -218,11 +237,12 @@ def plot_repartition(parameters, density='Normale'):      # parameters est un ta
 
     new_strains = [] #Important, pour ne pas avoir à recréer les "fiches d'identités" des strains (en voulant éviter les bugs de non-effacement des tailles de populations) (oui ça pourrait être global mais jpp)
 
-    strains_id = np.linspace(0, 1000, 1001)
-    alphas = 1/strains_id
+    #strains_id = np.linspace(0, 1000, 1001)
+    strains_id = np.linspace(0, nbstrains, nbstrains+1)
+    alphas = np.linspace(0, 1, nbstrains+1)
     for i in range(len(strains_id)):
         strain = Strain()
-        strain.alpha = alphas[strains_id[i]]
+        strain.alpha = alphas[i] ### alphas[strains_id[i]] ?
         new_strains.append(strain)
 
     if density == 'Normale' :
@@ -246,13 +266,11 @@ def plot_repartition(parameters, density='Normale'):      # parameters est un ta
             ordered_parameters.append(subtable)
         # Il n'y a plus qu'à faire correspondre [sigma, mu==Mean_starvation] <-> [liste de genotypes]
 
-        pass
+    return best_genotypes_sigma
 
-    pass
+#print(plot_repartition(1))
 
-
-
-def plot_popstrain(strain_name):
+""" def plot_popstrain(strain_name):
     strains_list = data[0]["strains"]
     index_strain = 0
     for j in range(len(strains_list)):
@@ -278,6 +296,6 @@ def plot_popstrain(strain_name):
     plt.show()
     plt.legend(['First line', 'Second line'])
 
-plot_popstrain('Strain basic')
+plot_popstrain('Strain basic') """
 
 print("helloworld")
