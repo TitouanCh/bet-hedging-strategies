@@ -4,25 +4,36 @@ import matplotlib.pyplot as plt
 import random
 
 class Strain:
-    def __init__(self):
+    def __init__(self, a):
+        # - Strain parameters --------------------------
+        # Investement in aggregation
+        self.alpha = a
+        
+        # Division rate --------------------------------
+        self.c = 0.173
+
+        # Scale factor of resources per division with cell size
+        self.Q = 1
+
+        # - Other attribute ----------------------------
         self.name = "Strain basic"
-        self.c = 0.173        #division rate
-        self.Q = 1         #a voir, cmax/c
         self.spores = 0
-        self.vg = 10**8       #population
-        self.alpha = 0.5
+        # Initial population
+        self.vg = 10**8
+        
     def __str__(self):
         return "Name : " + self.name + ", Population X = " + str(self.vg + self.spores)
     def __repr__(self):
         return self.__str__()
 
-# Copy strains without reference
+# - Copy strains without reference
 def copyStrains(strains):
     resultat = []
     for s in strains:
         resultat.append(copy(s))
     return resultat
 
+<<<<<<< HEAD
 #global parameters
 data = []  #stockage à chaque temps dt
 R0 = 10**8    #ressources initiales
@@ -51,6 +62,50 @@ def survival_vg(time_starvation, souche):
 """ def initialisation():
     a = Strain()
     strains.append(a) """
+=======
+# - Simulation parameters (described in paper 108) -----
+# Rate of decrease of the survival probability
+mu = 2*(10**-3)
+
+# Maximum lifetime of a non-aggregated starving cell --
+T_sur = 200
+
+# Spore germination time ------------------------------
+tau = 4
+
+# Spore mortality rate --------------------------------
+delta = 2 * (10**(-4))
+
+# Fraction of aggregators that become spores ----------
+spore_stalk = 0.8
+
+# Food Pusle Size -------------------------------------
+R0 = 10**8
+
+# Half-saturation constant of resources consumption ---
+Rhalf = 0.1*R0
+
+# Resources exhaustion threshold ----------------------
+Rstar = 1
+
+# - Global parameters ---------------------------------
+
+data = []  #stockage à chaque temps dt
+R = R0  #ressources (va évoluer dans le temps)
+strains = []
+Time_passed = 0       
+tau_counter = 0
+Time_rich = 0
+Time_starvation = 0
+
+total_time = 2*(10**3)
+
+# -----------------------------------------------------
+
+def initialisation():
+    a = Strain(0)
+    strains.append(a)
+>>>>>>> titouan
 
 def Normale_density(x, mu, sigma):
     return (np.pi*sigma) * np.exp(-0.5*((x-mu)/sigma)**2)
@@ -129,6 +184,10 @@ def starvation_step(t):
     Time_starvation += t
     Time_passed += t
 
+def survival_vg(time_starvation, souche):
+    global T_sur
+    beta = 3.1 - (4 * souche.c)
+    return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
 
 def rich_step(dt):
     global Time_passed, R, tau_counter, Time_rich, Time_starvation
@@ -182,9 +241,14 @@ def rich_step(dt):
 
 
 
+<<<<<<< HEAD
 """ initialisation() #Main
 main_step(400, 0.5, 4)
 Pop1R_plot = [[],[],[],[]] """
+=======
+initialisation() #Main
+main_step(total_time, 1, 100)
+>>>>>>> titouan
 Pop1R_plot = [[],[],[],[]]
 
 
