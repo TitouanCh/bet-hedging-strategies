@@ -33,36 +33,6 @@ def copyStrains(strains):
         resultat.append(copy(s))
     return resultat
 
-<<<<<<< HEAD
-#global parameters
-data = []  #stockage à chaque temps dt
-R0 = 10**8    #ressources initiales
-Rhalf = 0.1*R0  #moitié de saturation des ressources
-R = R0  #ressources (va évoluer dans le temps)
-Rstar = 1
-strains = []
-# new_strains = []
-winners = [] #Les alphas des meilleures strains pour chaque sélection (si tout va bien, dans le même ordre que celui donné par les curseurs des autres paramètres)
-Time_passed = 0       
-tau = 4       #hours = spore germination time
-tau_counter = 0
-delta = 2 * 10**(-4)    #spore mortality rate
-spore_stalk = 0.8
-Time_rich = 0
-Time_starvation = 0
-T_sur = 200
-
-
-def survival_vg(time_starvation, souche):
-    global T_sur
-    mu = 1.1 - (2 * souche.c)
-    beta = 3.1 - (4 * souche.c)
-    return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
-
-""" def initialisation():
-    a = Strain()
-    strains.append(a) """
-=======
 # - Simulation parameters (described in paper 108) -----
 # Rate of decrease of the survival probability
 mu = 2*(10**-3)
@@ -105,7 +75,6 @@ total_time = 2*(10**3)
 def initialisation():
     a = Strain(0)
     strains.append(a)
->>>>>>> titouan
 
 def Normale_density(x, mu, sigma):
     return (np.pi*sigma) * np.exp(-0.5*((x-mu)/sigma)**2)
@@ -241,14 +210,9 @@ def rich_step(dt):
 
 
 
-<<<<<<< HEAD
 """ initialisation() #Main
 main_step(400, 0.5, 4)
 Pop1R_plot = [[],[],[],[]] """
-=======
-initialisation() #Main
-main_step(total_time, 1, 100)
->>>>>>> titouan
 Pop1R_plot = [[],[],[],[]]
 
 
