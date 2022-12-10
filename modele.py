@@ -63,6 +63,7 @@ Rstar = 1
 data = []  #stockage à chaque temps dt
 R = R0  #ressources (va évoluer dans le temps)
 strains = []
+winners = [] #Les alphas des meilleures strains pour chaque sélection (si tout va bien, dans le même ordre que celui donné par les curseurs des autres paramètres)
 Time_passed = 0       
 tau_counter = 0
 Time_rich = 0
@@ -72,17 +73,28 @@ total_time = 2*(10**3)
 
 # -----------------------------------------------------
 
-def initialisation():
-    a = Strain(0)
-    strains.append(a)
 
-def Normale_density(x, mu, sigma):
-    return (np.pi*sigma) * np.exp(-0.5*((x-mu)/sigma)**2)
+def survival_vg(time_starvation, souche, type):
+    # Type = "stochastic" ou "arbitrary"
+    global T_sur
+    beta = 3.1 - (4 * souche.c)
+    if type == "arbitrary":
+        ret = (np.exp(-(mu*T_sur)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
+    elif type == "stochastic":
+        ret = (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*time_starvation)**(beta)))/(1 - np.exp(-(mu*time_starvation)**(beta)))
+    return ret
+
+""" def initialisation():
+    a = Strain()
+    strains.append(a) """
+
+def Normale_density(x, mu_, sigma):
+    return (np.pi*sigma) * np.exp(-0.5*((x-mu_)/sigma)**2)
 
 def Normale_starvationtime_randomselection(parameters_mu_sigma, step=0.05):                  #(OLD : domain = borne sup (borne inf = 0), size ->~= precision)
     mu = parameters_mu_sigma[0]
     sigma = parameters_mu_sigma[1]
-    
+
     x=0
     prob_table = [Normale_density(x, mu, sigma)]
     x+=1
@@ -91,7 +103,8 @@ def Normale_starvationtime_randomselection(parameters_mu_sigma, step=0.05):     
         prob_table.append(Normale_density(x, mu, sigma))
         x+=step
 
-    i = random.randint(0, len(prob_table))
+
+    i = random.randint(0, len(prob_table)-1)
     return prob_table[i]
 
 """ print(Normale_starvationtime_randomselection([0,1]))
@@ -115,13 +128,13 @@ plt.show() """
 def main_step(n, dt, parameters, density=Normale_starvationtime_randomselection, n_starv=None): #
     global Time_passed, R, tau_counter, Time_rich, Time_starvation
     i = 0
+    n_starv = density(parameters)
     while i < n * dt:
         if R > Rstar:
             rich_step(dt)
             i += dt
         else:
             #normale_starvation()
-            n_starv = density(parameters)
             starvation_step(n_starv * dt) #Remplacer par fonction répartition - "the growth phase starts with the arrival of a pulse of ressources"
             i += n_starv * dt
             R = 10**8 #Pulse of resources
@@ -137,7 +150,7 @@ def starvation_step(t):
 
     #stockage
     state = {"Time_passed" : Time_passed, "R" : R, "strains" : copyStrains(strains)}
-    ### data.append(state)
+    data.append(state) ###
 
     Time_rich = 0
 
@@ -148,15 +161,11 @@ def starvation_step(t):
 
         #Evolution durant starvation
         s.spores -= delta * s.spores * t
-        s.vg = survival_vg(t, s) * s.vg
+        s.vg = survival_vg(t, s, "stochastic") * s.vg
 
     Time_starvation += t
     Time_passed += t
 
-def survival_vg(time_starvation, souche):
-    global T_sur
-    beta = 3.1 - (4 * souche.c)
-    return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
 
 def rich_step(dt):
     global Time_passed, R, tau_counter, Time_rich, Time_starvation
@@ -226,8 +235,8 @@ def Simulation_and_Selection(parameters, density=Normale_starvationtime_randomse
     global winners
     
     graph_return = []
-    #tmax = 2*108
-    tmax = 10 ####
+    #tmax = 2*(10**8)
+    tmax = 1000 ####
     dt = 1 #h
 
     main_step(tmax, dt, parameters, density)
@@ -248,7 +257,7 @@ def Simulation_and_Selection(parameters, density=Normale_starvationtime_randomse
 strains_id = np.linspace(0, 10, 11)
 alphas = np.linspace(0, 1, 11)
 for i in range(len(strains_id)):
-        strain = Strain()
+        strain = Strain(alphas[i])
         print(strains)
         strain.alpha = alphas[i]
         strains.append(strain)
@@ -269,8 +278,8 @@ def plot_repartition(nbstrains, density='Normale'):      # parameters est un tab
     strains_id = np.linspace(0, nbstrains, nbstrains+1)
     alphas = np.linspace(0, 1, nbstrains+1)
     for i in range(len(strains_id)):
-        strain = Strain()
-        strain.alpha = alphas[i] ### alphas[strains_id[i]] ?
+        strain = Strain(alphas[i])
+        #strain.alpha = alphas[i] ### alphas[strains_id[i]] ?
         new_strains.append(strain)
 
     if density == 'Normale' :
