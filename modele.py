@@ -268,7 +268,7 @@ strains_id = np.linspace(0, 10, 11)
 alphas = np.linspace(0, 1, 11)
 initial_nb = []
 for i in range(len(strains_id)):
-    initial_nb.append(Lognormale_density((random.random()+00.1)*3 ,0 ,1))
+    initial_nb.append(Lognormale_density((random.random()+0.01)*3 ,0 ,1))
 print(initial_nb)
 summ = np.sum(initial_nb)
 print(summ)
@@ -301,13 +301,13 @@ def plot_repartition(nbstrains, density='Normale'):      # parameters est un tab
 
     initial_nb = []
     for i in range(len(strains_id)):
+        xd = (random.random()*3)+0.001
         initial_nb.append(Lognormale_density(0,1, xd))
     initial_nb = (initial_nb * nb_init_max)/np.sum(initial_nb)
 
     for i in range(len(strains_id)):
         strain = Strain(alphas[i])
         #strain.alpha = alphas[i] ### alphas[strains_id[i]] ?
-        xd = random.random()*3
         strain.vg = initial_nb[i]
         new_strains.append(strain)
 
