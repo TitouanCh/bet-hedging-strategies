@@ -19,7 +19,7 @@ class Strain:
         self.name = "Strain basic"
         self.spores = 0
         # Initial population
-        self.vg = 10**8
+        self.vg = 0 #10**8 -> maximum initial pour toutes les strains présentes
         
     def __str__(self):
         return "Name : " + self.name + ", Population X = " + str(self.vg + self.spores)
@@ -69,41 +69,50 @@ tau_counter = 0
 Time_rich = 0
 Time_starvation = 0
 
-total_time = 2*(10**3)
+total_time = 2*(10**8)
 
 # -----------------------------------------------------
 
 
-def survival_vg(time_starvation, souche, type):
+def survival_vg(time_starvation, souche):
     # Type = "stochastic" ou "arbitrary"
     global T_sur
     beta = 3.1 - (4 * souche.c)
-    if type == "arbitrary":
-        ret = (np.exp(-(mu*T_sur)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
-    elif type == "stochastic":
-        ret = (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*time_starvation)**(beta)))/(1 - np.exp(-(mu*time_starvation)**(beta)))
-    return ret
+    return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
 
 """ def initialisation():
     a = Strain()
     strains.append(a) """
 
+def Lognormale_density(x, m_, s_):
+    return (1/(x*s_*np.sqrt(2*np.pi))) * np.exp(-0.5*(((np.log(x)-m_))**2)*s_)
+
 def Normale_density(x, mu_, sigma):
-    return (np.pi*sigma) * np.exp(-0.5*((x-mu_)/sigma)**2)
+    #return (1/(np.sqrt(np.pi*2)*sigma)) * np.exp(-0.5*(((x-mu_))**2)*sigma)
+    return np.exp(-((x-mu_)**2)/((sigma**2)*2))/(sigma*np.sqrt(2*np.pi))
+
+#plott = Lognormale_density(np.arange(1,100)/10,0,1)
+plottt = Normale_density(np.arange(200, 600),400,60)
+#plt.plot(np.arange(99), plott)
+plt.plot(np.arange(200, 600), plottt, color='red')
+plt.show()
 
 def Normale_starvationtime_randomselection(parameters_mu_sigma, step=0.05):                  #(OLD : domain = borne sup (borne inf = 0), size ->~= precision)
     mu = parameters_mu_sigma[0]
     sigma = parameters_mu_sigma[1]
 
-    x=0
+    if mu-50 <=0:
+        x=0
+    else : 
+        x=mu-50
     prob_table = [Normale_density(x, mu, sigma)]
-    x+=1
+    x+=step
 
     while prob_table[-1]>=0.001:
         prob_table.append(Normale_density(x, mu, sigma))
         x+=step
 
-
+    print(prob_table)
     i = random.randint(0, len(prob_table)-1)
     return prob_table[i]
 
@@ -161,7 +170,7 @@ def starvation_step(t):
 
         #Evolution durant starvation
         s.spores -= delta * s.spores * t
-        s.vg = survival_vg(t, s, "stochastic") * s.vg
+        s.vg = survival_vg(t, s, ) * s.vg
 
     Time_starvation += t
     Time_passed += t
@@ -199,10 +208,11 @@ def rich_step(dt):
     #calcul
     kRGab = state["R"] / (state["R"] + Rhalf)
     sommeTit = 0
-
+    print("kRGab", kRGab)
     #calcul - population
     for s in strains:
         X = s.vg + s.spores
+        print("X", X, "s.spores", s.spores, "s.vg", s.vg, "s.Q", s.Q, "s.alpha", s.alpha, "s.c", s.c, dt)
         sommeTit += s.Q * s.c * X
         s.vg += s.c * kRGab * X * dt
         if s.spores > 0: s.spores -= delta * s.spores * dt
@@ -256,30 +266,49 @@ def Simulation_and_Selection(parameters, density=Normale_starvationtime_randomse
 
 strains_id = np.linspace(0, 10, 11)
 alphas = np.linspace(0, 1, 11)
+initial_nb = []
 for i in range(len(strains_id)):
-        strain = Strain(alphas[i])
-        print(strains)
-        strain.alpha = alphas[i]
-        strains.append(strain)
-print('Simulation_and_Selection', Simulation_and_Selection([0,1]))
+    initial_nb.append(Lognormale_density((random.random()+00.1)*3 ,0 ,1))
+print(initial_nb)
+summ = np.sum(initial_nb)
+print(summ)
+initial_nb = (np.array(initial_nb) * pow(10,8))/summ
+print(initial_nb)
+for i in range(len(strains_id)):
+    strain = Strain(alphas[i])
+    strain.vg = initial_nb[i]
+    strain.alpha = alphas[i]
+    strains.append(strain)
+print(strains)
+print('Simulation_and_Selection', Simulation_and_Selection([400,60]))
 
 
 def plot_repartition(nbstrains, density='Normale'):      # parameters est un tableau car les différentes lois n'ont pas besoin du même nombre de variables
     global winners
     global strains
 
-    #tmax : t = 2 × 108 h
-    """ tmax = 2*108
+    #tmax : t = 2 × 10**8 h
+    """ tmax = 2*10**8
     dt = 1 #h """
+
+    nb_init_max = 10**8
 
     new_strains = [] #Important, pour ne pas avoir à recréer les "fiches d'identités" des strains (en voulant éviter les bugs de non-effacement des tailles de populations) (oui ça pourrait être global mais jpp)
 
     #strains_id = np.linspace(0, 1000, 1001)
     strains_id = np.linspace(0, nbstrains, nbstrains+1)
     alphas = np.linspace(0, 1, nbstrains+1)
+
+    initial_nb = []
+    for i in range(len(strains_id)):
+        initial_nb.append(Lognormale_density(0,1, xd))
+    initial_nb = (initial_nb * nb_init_max)/np.sum(initial_nb)
+
     for i in range(len(strains_id)):
         strain = Strain(alphas[i])
         #strain.alpha = alphas[i] ### alphas[strains_id[i]] ?
+        xd = random.random()*3
+        strain.vg = initial_nb[i]
         new_strains.append(strain)
 
     if density == 'Normale' :
@@ -336,3 +365,4 @@ def plot_repartition(nbstrains, density='Normale'):      # parameters est un tab
 plot_popstrain('Strain basic') """
 
 print("helloworld")
+
