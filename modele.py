@@ -3,7 +3,7 @@ from copy import copy
 import matplotlib.pyplot as plt
 
 class Strain:
-    def __init__(self, a):
+    def __init__(self, a, n = "Strain basic"):
         # - Strain parameters --------------------------
         # Investement in aggregation
         self.alpha = a
@@ -15,13 +15,13 @@ class Strain:
         self.Q = 1
 
         # - Other attribute ----------------------------
-        self.name = "Strain basic"
+        self.name = n
         self.spores = 0
         # Initial population
         self.vg = 10**8
         
     def __str__(self):
-        return "Name : " + self.name + ", Population X = " + str(self.vg + self.spores)
+        return "Name : " + self.name + ", alpha = " + str(self.alpha) + ", Population X = " + str(self.vg + self.spores)
     def __repr__(self):
         return self.__str__()
 
@@ -57,26 +57,31 @@ Rhalf = 0.1*R0
 # Resources exhaustion threshold ----------------------
 Rstar = 1
 
-# - Global parameters ---------------------------------
+# - Global parameters - move this ---------------------
 
 data = []  #stockage à chaque temps dt
 R = R0  #ressources (va évoluer dans le temps)
 strains = []
 Time_passed = 0       
 tau_counter = 0
-Time_rich = 0
-Time_starvation = 0
 
+# Normaly 2*(10**8)
 total_time = 2*(10**3)
 
 # -----------------------------------------------------
 
-def initialisation():
-    a = Strain(0)
+def initialisation(n_genotypes):
+    """ Basic Simulation
+    a = Strain(1)
     strains.append(a)
+    """
+
+    for i in range(n_genotypes):
+        a = Strain(np.random.random(), "Strain " + str(i))
+        strains.append(a)
 
 def main_step(n, dt, n_starv):
-    global Time_passed, R, tau_counter, Time_rich, Time_starvation
+    global Time_passed, R, tau_counter
     i = 0
     while i < n * dt:
         if R > Rstar:
@@ -89,13 +94,11 @@ def main_step(n, dt, n_starv):
             tau_counter = 0
 
 def starvation_step(t):
-    global Time_passed, Time_starvation, Time_rich
+    global Time_passed
 
     #stockage
     state = {"Time_passed" : Time_passed, "R" : R, "strains" : copyStrains(strains)}
     data.append(state)
-
-    Time_rich = 0
 
     for s in strains: 
         #Calcul des conséquences de l'arrivée de la starvation
@@ -106,19 +109,13 @@ def starvation_step(t):
         s.spores -= delta * s.spores * t
         s.vg = survival_vg(t, s) * s.vg
 
-    Time_starvation += t
-    Time_passed += t
-
 def survival_vg(time_starvation, souche):
     global T_sur
     beta = 3.1 - (4 * souche.c)
     return (np.exp(-(mu*time_starvation)**(beta)) - np.exp(-(mu*T_sur)**(beta)))/(1 - np.exp(-(mu*T_sur)**(beta)))
 
 def rich_step(dt):
-    global Time_passed, R, tau_counter, Time_rich, Time_starvation
-    #print(Time_passed)
-
-    Time_starvation = 0 #! ici ça doit bien être temps de starvation
+    global Time_passed, R, tau_counter
     
     #stockage
     state = {"Time_passed" : Time_passed, "R" : R, "strains" : copyStrains(strains)}
@@ -131,7 +128,6 @@ def rich_step(dt):
             nu = 1.1 - 2*s.c
             s.vg += s.spores * (1 - nu)
             s.spores = 0
-
 
             ###Sens inverse :
             # flow = s.vg * s.alpha #!!! alpha bien par rapport à vg slmt ?
@@ -161,42 +157,78 @@ def rich_step(dt):
 
     Time_passed += dt
     if tau_counter >= 0: tau_counter += dt
-    
-    Time_rich += dt
+
+def get_winner(d):
+    max_pop = -1
+    winner = None
+    for s in d[-1]["strains"]:
+        if s.vg + s.spores > max_pop:
+            winner = s
+            max_pop = s.vg + s.spores
+    return winner
 
 
-
-initialisation() #Main
-main_step(total_time, 1, 100)
-Pop1R_plot = [[],[],[],[]]
-
-def plot_popstrain(strain_name):
-    strains_list = data[0]["strains"]
-    index_strain = 0
-    for j in range(len(strains_list)):
-        if strains_list[j]==strain_name:
-            index_strain = j
+def plot_pop(d):
+    strains_list = d[0]["strains"]
     t = []
-    for i in range(len(data)):
-        Pop1R_plot[0].append(data[i]["R"])
-        Pop1R_plot[1].append(data[i]["strains"][index_strain].vg + data[i]["strains"][index_strain].spores)
-        Pop1R_plot[2].append(data[i]["strains"][index_strain].vg)
-        Pop1R_plot[3].append(data[i]["strains"][index_strain].spores)
-        t.append(data[i]["Time_passed"])
-
     
+    for i in range(len(d)):
+        t.append(d[i]["Time_passed"])
     
-    #plt.scatter(t, Pop1R_plot[0], label='Ressources')
-    #plt.scatter(t, Pop1R_plot[1], label="Population")
-
-    #plt.plot(t, Pop1R_plot[0], label="Ressources")
-    #plt.plot(t, Pop1R_plot[1], label="Population")
-    plt.plot(t, Pop1R_plot[2], label="Vege")
-    plt.plot(t, Pop1R_plot[3], label="Spores")
-
+    for k in range(len(strains_list)):
+        arr = []
+        for i in range(len(d)):
+            arr.append(d[i]["strains"][k].vg + d[i]["strains"][k].spores)
+        plt.plot(t, arr, label = strains_list[k].name)
     plt.show()
-    plt.legend(['First line', 'Second line'])
 
-plot_popstrain('Strain basic')
+def plot_vgspore(d):
+    strains_list = d[0]["strains"]
+    t = []
+    
+    for i in range(len(d)):
+        t.append(d[i]["Time_passed"])
+    
+    for k in range(len(strains_list)):
+        arr = [[], []]
+        for i in range(len(d)):
+            arr[0].append(d[i]["strains"][k].vg)
+            arr[1].append(d[i]["strains"][k].spores)
+        plt.plot(t, arr[0], label = strains_list[k].name)
+        plt.plot(t, arr[1], label = strains_list[k].name)
+    plt.show()
 
+def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**8), precision = 0.5):
+    global data, R, strains, Time_passed, total_time, tau_counter
+    # - Simulation
+    total_time = Tt
+    
+    winners_alpha = []
+    t = []
+    
+    for i in range(0, max_starv_time, dt):
+        data = []
+        R = R0
+        strains = []
+        Time_passed = 0       
+        tau_counter = 0
+
+        initialisation(n_genotypes)
+        print("Simulation started ---")
+        main_step(total_time, precision, i/precision)
+        winners_alpha.append(get_winner(data).alpha)
+        t.append(i)
+        print("Currently on simulation: " + str(int(i/dt)) + "/" + str(int(max_starv_time/dt)))
+    
+    # - Graph
+    plt.plot(t, winners_alpha, label = "alpha of winners")
+    plt.show()
+
+        
+"""
+initialisation() #Main
+main_step(total_time, 1, 200)
+print(get_winner(data))
+"""
+simulate_environements(400, 10)
 print("helloworld")
