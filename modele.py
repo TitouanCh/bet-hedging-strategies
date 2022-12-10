@@ -1,9 +1,10 @@
 import numpy as np
+import math
 from copy import copy
 import matplotlib.pyplot as plt
 
 class Strain:
-    def __init__(self, a, n = "Strain basic"):
+    def __init__(self, a, n = "Strain basic", r = 1):
         # - Strain parameters --------------------------
         # Investement in aggregation
         self.alpha = a
@@ -19,7 +20,10 @@ class Strain:
         self.spores = 0
         # Initial population
         self.vg = 10**8
-        
+        self.initial_ratio = r
+    def normalize_pop(self, normalize):
+        self.initial_ratio = self.initial_ratio/normalize
+        self.vg = 10**8 * self.initial_ratio
     def __str__(self):
         return "Name : " + self.name + ", alpha = " + str(self.alpha) + ", Population X = " + str(self.vg + self.spores)
     def __repr__(self):
@@ -75,12 +79,19 @@ def initialisation(n_genotypes):
     a = Strain(1)
     strains.append(a)
     """
-
+    lognormal = lambda m, v, x : np.exp(m + np.sqrt(2 * v)) * math.erfc(2 * x - 1)
+    logsum = 0
+    
     for i in range(n_genotypes):
-        a = Strain(np.random.random(), "Strain " + str(i))
+        x = lognormal(0, 1, np.random.rand())
+        a = Strain(np.random.random(), "Strain " + str(i), x)
         strains.append(a)
+        logsum += x
+    
+    for s in strains:
+        s.normalize_pop(logsum)
 
-def main_step(n, dt, n_starv):
+def main_step(n, dt, n_starv, quant_func = lambda x, p : x):
     global Time_passed, R, tau_counter
     i = 0
     while i < n * dt:
@@ -88,8 +99,8 @@ def main_step(n, dt, n_starv):
             rich_step(dt)
             i += dt
         else:
-            starvation_step(n_starv * dt)
-            i += n_starv * dt
+            starvation_step(quant_func(n_starv, np.random.rand()))
+            i += n_starv
             R = 10**8
             tau_counter = 0
 
@@ -100,7 +111,7 @@ def starvation_step(t):
     state = {"Time_passed" : Time_passed, "R" : R, "strains" : copyStrains(strains)}
     data.append(state)
 
-    for s in strains: 
+    for s in strains:
         #Calcul des conséquences de l'arrivée de la starvation
         s.spores = s.alpha * spore_stalk * s.vg
         s.vg = (1 - s.alpha) * s.vg
@@ -108,6 +119,9 @@ def starvation_step(t):
         #Evolution durant starvation
         s.spores -= delta * s.spores * t
         s.vg = survival_vg(t, s) * s.vg
+        
+        if s.vg < 0: s.vg = 0
+        if s.spores < 0: s.spores = 0
 
 def survival_vg(time_starvation, souche):
     global T_sur
@@ -149,9 +163,10 @@ def rich_step(dt):
         sommeTit += s.Q * s.c * X
         s.vg += s.c * kRGab * X * dt
         if s.spores > 0: s.spores -= delta * s.spores * dt
+        else: s.spores = 0
 
     # calcul - ressource
-    R += - kRGab * sommeTit
+    R += -kRGab * sommeTit * dt
     if R <= Rstar:
         R = Rstar
 
@@ -198,7 +213,7 @@ def plot_vgspore(d):
         plt.plot(t, arr[1], label = strains_list[k].name)
     plt.show()
 
-def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**8), precision = 0.5):
+def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**3), precision = 0.1):
     global data, R, strains, Time_passed, total_time, tau_counter
     # - Simulation
     total_time = Tt
@@ -206,7 +221,7 @@ def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**8
     winners_alpha = []
     t = []
     
-    for i in range(0, max_starv_time, dt):
+    for i in range(1, max_starv_time, dt):
         data = []
         R = R0
         strains = []
@@ -215,10 +230,10 @@ def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**8
 
         initialisation(n_genotypes)
         print("Simulation started ---")
-        main_step(total_time, precision, i/precision)
+        main_step(total_time, precision, i, lambda x, p : -np.log(1 - p)*x)
         winners_alpha.append(get_winner(data).alpha)
         t.append(i)
-        print("Currently on simulation: " + str(int(i/dt)) + "/" + str(int(max_starv_time/dt)))
+        print("Currently on simulation: " + str(int(i/dt) + 1) + "/" + str(int(max_starv_time/dt)))
     
     # - Graph
     plt.plot(t, winners_alpha, label = "alpha of winners")
@@ -228,7 +243,13 @@ def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**8
 """
 initialisation() #Main
 main_step(total_time, 1, 200)
-print(get_winner(data))
 """
-simulate_environements(400, 10)
-print("helloworld")
+
+simulate_environements(400, 10, 101)
+
+"""
+initialisation(100)
+main_step(total_time, 0.5, 50, lambda x, p : -np.log(1 - p)*x)
+print(get_winner(data))
+plot_vgspore(data)
+"""
