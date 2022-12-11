@@ -1,5 +1,7 @@
 import numpy as np
 import math
+import json
+from scipy.special  import erfinv
 from copy import copy
 import matplotlib.pyplot as plt
 
@@ -70,7 +72,7 @@ Time_passed = 0
 tau_counter = 0
 
 # Normaly 2*(10**8)
-total_time = 2*(10**3)
+total_time = 2*(10**4)
 
 # -----------------------------------------------------
 
@@ -79,7 +81,7 @@ def initialisation(n_genotypes):
     a = Strain(1)
     strains.append(a)
     """
-    lognormal = lambda m, v, x : np.exp(m + np.sqrt(2 * v)) * math.erfc(2 * x - 1)
+    lognormal = lambda m, v, p : np.exp(m + np.sqrt(2 * v) * erfinv(2 * p - 1))
     logsum = 0
     
     for i in range(n_genotypes):
@@ -99,7 +101,9 @@ def main_step(n, dt, n_starv, quant_func = lambda x, p : x):
             rich_step(dt)
             i += dt
         else:
-            starvation_step(quant_func(n_starv, np.random.rand()))
+            starv_time = quant_func(n_starv, np.random.rand())
+            if starv_time > 0:
+                starvation_step(starv_time)
             i += n_starv
             R = 10**8
             tau_counter = 0
@@ -168,6 +172,9 @@ def rich_step(dt):
     # calcul - ressource
     R += -kRGab * sommeTit * dt
     if R <= Rstar:
+        for i in range(len(strains)):
+            strains[i].vg = state["strains"][i].vg
+            strains[i].spores = state["strains"][i].spores
         R = Rstar
 
     Time_passed += dt
@@ -182,6 +189,13 @@ def get_winner(d):
             max_pop = s.vg + s.spores
     return winner
 
+def get_winner_alpha_mean(d):
+    avg = 0
+    tpop = 0
+    for s in d[-1]["strains"]:
+        avg += s.alpha * (s.vg + s.spores)
+        tpop += s.vg + s.spores
+    return avg / tpop
 
 def plot_pop(d):
     strains_list = d[0]["strains"]
@@ -213,7 +227,7 @@ def plot_vgspore(d):
         plt.plot(t, arr[1], label = strains_list[k].name)
     plt.show()
 
-def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**3), precision = 0.1):
+def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**2), precision = 0.1, function = lambda x, p : x, output_name = "output.txt"):
     global data, R, strains, Time_passed, total_time, tau_counter
     # - Simulation
     total_time = Tt
@@ -230,26 +244,52 @@ def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**3
 
         initialisation(n_genotypes)
         print("Simulation started ---")
-        main_step(total_time, precision, i, lambda x, p : -np.log(1 - p)*x)
-        winners_alpha.append(get_winner(data).alpha)
+        main_step(total_time, precision, i, function)
+        winners_alpha.append(get_winner_alpha_mean(data))
         t.append(i)
         print("Currently on simulation: " + str(int(i/dt) + 1) + "/" + str(int(max_starv_time/dt)))
     
     # - Graph
     plt.plot(t, winners_alpha, label = "alpha of winners")
-    plt.show()
 
-        
+    # - Save data just in case
+    output = [t, winners_alpha]
+    save_file_with_data(output_name, output)
+
+
+def save_file_with_data(n, d):
+    f = open("./outputs/" + n, "w")
+    f.write(json.dumps(d))
+    f.close
+
 """
 initialisation() #Main
 main_step(total_time, 1, 200)
 """
 
-simulate_environements(400, 10, 101)
+determinist = lambda x, p : x
+exponential = lambda x, p : -np.log(1 - p) * x
+normal_20 = lambda x, p : x + 20 * np.sqrt(2) * erfinv(2 * p - 1)
+normal_40 = lambda x, p : x + 40 * np.sqrt(2) * erfinv(2 * p - 1)
+normal_60 = lambda x, p : x + 60 * np.sqrt(2) * erfinv(2 * p - 1)
+
+plt.figure(1)
+simulate_environements(400, 5, 1001, 2*(10**8), 0.1, determinist, "determinist.txt")
+plt.figure(2)
+simulate_environements(400, 5, 1001, 2*(10**8), 0.1, exponential, "exponential.txt")
+plt.figure(3)
+simulate_environements(400, 5, 1001, 2*(10**8), 0.1, normal_20, "normal_20.txt")
+plt.figure(4)
+simulate_environements(400, 5, 1001, 2*(10**8), 0.1, normal_40, "normal_40.txt")
+plt.figure(5)
+simulate_environements(400, 5, 1001, 2*(10**8), 0.1, normal_60, "normal_60.txt")
 
 """
 initialisation(100)
-main_step(total_time, 0.5, 50, lambda x, p : -np.log(1 - p)*x)
+main_step(10**6, 0.5, 50, lambda x, p : -np.log(1 - p)*x)
 print(get_winner(data))
-plot_vgspore(data)
+print(get_winner_alpha_mean(data))
+plot_pop(data)
 """
+
+plt.show()
