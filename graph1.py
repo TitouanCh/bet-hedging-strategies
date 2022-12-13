@@ -16,8 +16,8 @@ normal_60 = read_file("normal_60.txt")
 
 f, (ax1, ax2) = plt.subplots(2, 2, sharex=True, figsize=(16, 9), gridspec_kw={'width_ratios': [2, 1]})
 
-ax1[0].plot(determinist[0], determinist[1], label="Deterministic", c="red", linestyle='--', marker='s', markersize=3.0)
-ax1[0].plot(exponential[0], exponential[1], label="Exponential", c="black", linestyle='--', marker='s', markersize=3.0)
+ax1[0].plot(determinist[0], determinist[1], label="Deterministe", c="red", linestyle='--', marker='s', markersize=3.0)
+ax1[0].plot(exponential[0], exponential[1], label="Exponentielle", c="black", linestyle='--', marker='s', markersize=3.0)
 ax1[0].legend(loc="lower right")
 f.supylabel('Investissement dans les spores, α')
 
@@ -26,7 +26,7 @@ ax2[0].plot(normal_20[0], normal_20[1], label="σ = 20", c="green", linestyle='-
 ax2[0].plot(normal_40[0], normal_40[1], label="σ = 40", c="blue", linestyle='--', marker='s', markersize=3.0)
 ax2[0].plot(normal_60[0], normal_60[1], label="σ = 60", c="orange", linestyle='--', marker='s', markersize=3.0)
 ax2[0].legend(loc="lower right")
-ax2[0].set_xlabel("Mean starvation time $λ_{T}$ (hour)")
+ax2[0].set_xlabel("Temps moyen de famine $λ_{T}$ (heure)")
 ax2[1].set_xlabel("Starvation time")
 
 t = np.linspace(0, 400,401)

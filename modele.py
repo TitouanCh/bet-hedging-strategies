@@ -150,6 +150,7 @@ def starvation_step(t):
         
         if s.vg < 0: s.vg = 0
         if s.spores < 0: s.spores = 0
+    Time_passed += t
 
 def survival_vg(time_starvation, souche):
     global T_sur
@@ -221,7 +222,7 @@ def get_winner_alpha_mean(d):
         tpop += s.vg + s.spores
     return avg / tpop
 
-def plot_pop(d):
+def plot_pop(d, title="Evolution des population"):
     strains_list = d[0]["strains"]
     t = []
     
@@ -232,10 +233,15 @@ def plot_pop(d):
         arr = []
         for i in range(len(d)):
             arr.append(d[i]["strains"][k].vg + d[i]["strains"][k].spores)
-        plt.plot(t, arr, label = strains_list[k].name)
+        plt.plot(t, arr, label = "α = {x:.2f}".format(x = strains_list[k].alpha))
+    
+    plt.title(title, fontsize=8)
+    plt.xlabel("Temps (heure)")
+    plt.ylabel("Taille de population, spores + végétatives")
+    plt.legend(loc = "lower right", fontsize=6)
     plt.show()
 
-def plot_vgspore(d):
+def plot_vgspore(d, title = "None"):
     strains_list = d[0]["strains"]
     t = []
     
@@ -247,8 +253,13 @@ def plot_vgspore(d):
         for i in range(len(d)):
             arr[0].append(d[i]["strains"][k].vg)
             arr[1].append(d[i]["strains"][k].spores)
-        plt.plot(t, arr[0], label = strains_list[k].name)
-        plt.plot(t, arr[1], label = strains_list[k].name)
+        plt.plot(t, arr[0], label = "α = {x:.2f}, végétatives".format(x = strains_list[k].alpha))
+        plt.plot(t, arr[1], label = "α = {x:.2f}, spores".format(x = strains_list[k].alpha))
+    
+    plt.title(title, fontsize=8)
+    plt.xlabel("Temps (heure)")
+    plt.ylabel("Taille de population")
+    plt.legend(loc = "lower right")
     plt.show()
 
 def simulate_environements(max_starv_time, dt, n_genotypes = 1001, Tt = 2*(10**2), precision = 0.1, function = lambda x, p : x, output_name = "output.txt"):
@@ -315,90 +326,11 @@ def save_file_with_data(n, d):
     f.write(json.dumps(d))
     f.close
 
-"""
-initialisation() #Main
-main_step(total_time, 1, 200)
-"""
-
 determinist = lambda x, p : x
 exponential = lambda x, p : -np.log(1 - p) * x
 normal_20 = lambda x, p : x + 20 * np.sqrt(2) * erfinv(2 * p - 1)
 normal_40 = lambda x, p : x + 40 * np.sqrt(2) * erfinv(2 * p - 1)
 normal_60 = lambda x, p : x + 60 * np.sqrt(2) * erfinv(2 * p - 1)
-
-"""
-# Figure 1 ---
-plt.figure(1)
-simulate_environements(400, 5, 201, 5*(10**3), 0.1, determinist, "determinist.txt"
-plt.figure(2)
-simulate_environements(400, 5, 201, 5*(10**5), 0.1, exponential, "exponential.txt")
-plt.figure(3)
-simulate_environements(400, 5, 201, 5*(10**5), 0.1, normal_20, "normal_20.txt")
-plt.figure(4)
-simulate_environements(400, 5, 201, 5*(10**5), 0.1, normal_40, "normal_40.txt")
-plt.figure(5)
-simulate_environements(400, 5, 201, 5*(10**5), 0.1, normal_60, "normal_60.txt")
-"""
-"""
-# Figure 2 ---
-
-# Determinist
-plt.figure(1)
-simulate_severe_dry_environements(400, 5, 8760, determinist, 301, 5*(10**5), 0.1, "severedry_d12_10-4.txt")
-plt.figure(2)
-simulate_severe_dry_environements(400, 5, 8030, determinist, 301, 5*(10**4), 0.1, "severedry_d11_10-4.txt")
-plt.figure(3)
-simulate_severe_dry_environements(400, 5, 6570, determinist, 301, 5*(10**4), 0.1, "severedry_d9_10-4.txt")
-plt.figure(4)
-simulate_severe_dry_environements(400, 5, 4380, determinist, 301, 5*(10**4), 0.1, "severedry_d6_10-4.txt")
-plt.figure(5)
-simulate_severe_dry_environements(400, 5, 2190, determinist, 301, 5*(10**4), 0.1, "severedry_d3_10-4.txt")
-plt.figure(6)
-simulate_severe_dry_environements(400, 5, 0, determinist, 301, 5*(10**4), 0.1, "severedry_d0_10-4.txt")
-
-# Exponential
-plt.figure(7)
-simulate_severe_dry_environements(400, 5, 8760, exponential, 301, 5*(10**4), 0.1, "severedry_e12_10-4.txt")
-plt.figure(8)
-simulate_severe_dry_environements(400, 5, 8030, exponential, 301, 5*(10**4), 0.1, "severedry_e11_10-4.txt")
-plt.figure(9)
-simulate_severe_dry_environements(400, 5, 6570, exponential, 301, 5*(10**4), 0.1, "severedry_e9_10-4.txt")
-plt.figure(10)
-simulate_severe_dry_environements(400, 5, 4380, exponential, 301, 5*(10**4), 0.1, "severedry_e6_10-4.txt")
-plt.figure(11)
-simulate_severe_dry_environements(400, 5, 2190, exponential, 301, 5*(10**4), 0.1, "severedry_e3_10-4.txt")
-plt.figure(12)
-simulate_severe_dry_environements(400, 5, 0, exponential, 301, 5*(10**4), 0.1, "severedry_e0_10-4.txt")
-
-# Normal 20
-plt.figure(13)
-simulate_severe_dry_environements(400, 5, 8760, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_12_10-4.txt")
-plt.figure(14)
-simulate_severe_dry_environements(400, 5, 8030, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_11_10-4.txt")
-plt.figure(15)
-simulate_severe_dry_environements(400, 5, 6570, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_9_10-4.txt")
-plt.figure(16)
-simulate_severe_dry_environements(400, 5, 4380, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_6_10-4.txt")
-plt.figure(17)
-simulate_severe_dry_environements(400, 5, 2190, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_3_10-4.txt")
-plt.figure(18)
-simulate_severe_dry_environements(400, 5, 0, normal_20, 301, 5*(10**4), 0.1, "severedry_n20_0_10-4.txt")
-
-# Normal 60
-plt.figure(19)
-simulate_severe_dry_environements(400, 5, 8760, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_12_10-4.txt")
-plt.figure(20)
-simulate_severe_dry_environements(400, 5, 8030, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_11_10-4.txt")
-plt.figure(21)
-simulate_severe_dry_environements(400, 5, 6570, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_9_10-4.txt")
-plt.figure(22)
-simulate_severe_dry_environements(400, 5, 4380, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_6_10-4.txt")
-plt.figure(23)
-simulate_severe_dry_environements(400, 5, 2190, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_3_10-4.txt")
-plt.figure(24)
-simulate_severe_dry_environements(400, 5, 0, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_0_10-4.txt")
-
-"""
 
 data = []
 R = R0
@@ -406,13 +338,49 @@ strains = []
 Time_passed = 0       
 tau_counter = 0
 
-initialisation(300)
+initialisation(10)
 print("Simulation started ---")
 #main_step(total_time, precision, i, function)
-wetseveredry_step(5*(10**6), 0.1, 8760, 50, lambda x, p : x)
+main_step(1*(10**5), 0.1, 200, determinist)
 print(get_winner(data))
-plot_pop(data)
+plot_pop(data, "Simulation, $T_{sur} =$ 200 heures (déterministe)")
 
-plt.show()
+data = []
+R = R0
+strains = []
+Time_passed = 0       
+tau_counter = 0
 
+initialisation(10)
+print("Simulation started ---")
+#main_step(total_time, precision, i, function)
+main_step(1*(10**5), 0.1, 200, exponential)
+print(get_winner(data))
+plot_pop(data, "Simulation, $T_{sur}$ suis une loi exponentielle de moyenne 200 heures.")
+
+data = []
+R = R0
+strains = []
+Time_passed = 0       
+tau_counter = 0
+
+initialisation(10)
+print("Simulation started ---")
+#main_step(total_time, precision, i, function)
+main_step(1*(10**5), 0.1, 200, normal_20)
+print(get_winner(data))
+plot_pop(data, "Simulation, $T_{sur}$ suis une loi normale de moyenne 200 heures et d'écart-type 20.")
+
+data = []
+R = R0
+strains = []
+Time_passed = 0       
+tau_counter = 0
+
+initialisation(10)
+print("Simulation started ---")
+#main_step(total_time, precision, i, function)
+main_step(1*(10**5), 0.1, 200, normal_60)
+print(get_winner(data))
+plot_pop(data, "Simulation, $T_{sur}$ suis une loi normale de moyenne 200 heures et d'écart-type 60.")
 print("hello")

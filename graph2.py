@@ -27,14 +27,14 @@ for i in ["0", "3", "6", "9", "11", "12"]:
 f, (ax1, ax2) = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(16, 9))
 
 colors = ["orange", "lightgreen", "purple", "blue", "red", "darkgreen"]
-label = ["$T_{dry} =$ 0", "$T_{dry} =$ 3 months", "$T_{dry} =$ 6 months", "$T_{dry} =$ 9 months", "$T_{dry} =$ 11 months", "$T_{dry} =$ 12 months"]
+label = ["$T_{dry} =$ 0", "$T_{dry} =$ 3 mois", "$T_{dry} =$ 6 mois", "$T_{dry} =$ 9 mois", "$T_{dry} =$ 11 mois", "$T_{dry} =$ 12 mois"]
 
 for i in range(len(determinist)):
     ax1[0].plot(determinist[i][0], determinist[i][1], label=label[i], c=colors[i], linestyle='--', marker='s', markersize=3.0)
 
 ax1[0].legend(loc="lower right")
 f.supylabel('Investissement dans les spores, α')
-f.supxlabel('Wet season mean starvation time $λ_{T}$ (hour)')
+f.supxlabel('Temps moyen de famine en saison humide $λ_{T}$ (heure)')
 
 for i in range(len(exponential)):
     ax1[1].plot(exponential[i][0], exponential[i][1], c=colors[i], linestyle='--', marker='s', markersize=3.0)
