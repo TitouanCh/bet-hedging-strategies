@@ -26,7 +26,7 @@ ax2[0].plot(normal_20[0], normal_20[1], label="σ = 20", c="green", linestyle='-
 ax2[0].plot(normal_40[0], normal_40[1], label="σ = 40", c="blue", linestyle='--', marker='s', markersize=3.0)
 ax2[0].plot(normal_60[0], normal_60[1], label="σ = 60", c="orange", linestyle='--', marker='s', markersize=3.0)
 ax2[0].legend(loc="lower right")
-ax2[0].set_xlabel("Mean starvation time $λ_{T}$")
+ax2[0].set_xlabel("Mean starvation time $λ_{T}$ (hour)")
 ax2[1].set_xlabel("Starvation time")
 
 t = np.linspace(0, 400,401)

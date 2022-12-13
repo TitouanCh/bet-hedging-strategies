@@ -10,7 +10,7 @@ def read_file(filename):
 
 determinist = []
 for i in ["0", "3", "6", "9", "11", "12"]:
-    determinist.append(read_file("severedry_d" + i + ".txt"))
+    determinist.append(read_file("severedry_d" + i + "_10-4.txt"))
 
 exponential = []
 for i in ["0", "3", "6", "9", "11", "12"]:
@@ -34,6 +34,7 @@ for i in range(len(determinist)):
 
 ax1[0].legend(loc="lower right")
 f.supylabel('Investissement dans les spores, α')
+f.supxlabel('Wet season mean starvation time $λ_{T}$ (hour)')
 
 for i in range(len(exponential)):
     ax1[1].plot(exponential[i][0], exponential[i][1], c=colors[i], linestyle='--', marker='s', markersize=3.0)

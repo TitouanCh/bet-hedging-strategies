@@ -117,7 +117,7 @@ def wetseveredry_step(n, dt, T_dry, lambda_wet, lambda_wet_function):
     i = 0
     
     while i < n * dt:
-        if (not dry_time and T_wet > 0):
+        if not dry_time:
             main_step(T_wet/dt, dt, lambda_wet, lambda_wet_function)
             dry_time = True
             
@@ -127,7 +127,7 @@ def wetseveredry_step(n, dt, T_dry, lambda_wet, lambda_wet_function):
             starvation_step(T_dry)
             dry_time = False
             
-            R = 10**8
+            if T_wet > 1: R = 10**8
             tau_counter = 0
 
             i += T_dry
@@ -328,9 +328,8 @@ normal_60 = lambda x, p : x + 60 * np.sqrt(2) * erfinv(2 * p - 1)
 
 """
 # Figure 1 ---
-
 plt.figure(1)
-simulate_environements(400, 5, 201, 5*(10**5), 0.1, determinist, "determinist.txt")
+simulate_environements(400, 5, 201, 5*(10**3), 0.1, determinist, "determinist.txt"
 plt.figure(2)
 simulate_environements(400, 5, 201, 5*(10**5), 0.1, exponential, "exponential.txt")
 plt.figure(3)
@@ -340,16 +339,14 @@ simulate_environements(400, 5, 201, 5*(10**5), 0.1, normal_40, "normal_40.txt")
 plt.figure(5)
 simulate_environements(400, 5, 201, 5*(10**5), 0.1, normal_60, "normal_60.txt")
 """
-
+"""
 # Figure 2 ---
 
 # Determinist
 plt.figure(1)
-simulate_severe_dry_environements(400, 5, 8760, determinist, 301, 5*(10**4), 0.1, "severedry_d12_10-4.txt")
-
+simulate_severe_dry_environements(400, 5, 8760, determinist, 301, 5*(10**5), 0.1, "severedry_d12_10-4.txt")
 plt.figure(2)
 simulate_severe_dry_environements(400, 5, 8030, determinist, 301, 5*(10**4), 0.1, "severedry_d11_10-4.txt")
-
 plt.figure(3)
 simulate_severe_dry_environements(400, 5, 6570, determinist, 301, 5*(10**4), 0.1, "severedry_d9_10-4.txt")
 plt.figure(4)
@@ -389,18 +386,32 @@ simulate_severe_dry_environements(400, 5, 0, normal_20, 301, 5*(10**4), 0.1, "se
 
 # Normal 60
 plt.figure(19)
-simulate_severe_dry_environements(400, 5, 8760, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_12_10-4.txt")
+simulate_severe_dry_environements(400, 5, 8760, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_12_10-4.txt")
 plt.figure(20)
-simulate_severe_dry_environements(400, 5, 8030, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_11_10-4.txt")
+simulate_severe_dry_environements(400, 5, 8030, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_11_10-4.txt")
 plt.figure(21)
-simulate_severe_dry_environements(400, 5, 6570, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_9_10-4.txt")
+simulate_severe_dry_environements(400, 5, 6570, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_9_10-4.txt")
 plt.figure(22)
-simulate_severe_dry_environements(400, 5, 4380, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_6_10-4.txt")
+simulate_severe_dry_environements(400, 5, 4380, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_6_10-4.txt")
 plt.figure(23)
-simulate_severe_dry_environements(400, 5, 2190, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_3_10-4.txt")
+simulate_severe_dry_environements(400, 5, 2190, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_3_10-4.txt")
 plt.figure(24)
-simulate_severe_dry_environements(400, 5, 0, normal_20, 301, 5*(10**4), 0.1, "severedry_n60_0_10-4.txt")
+simulate_severe_dry_environements(400, 5, 0, normal_60, 301, 5*(10**4), 0.1, "severedry_n60_0_10-4.txt")
 
+"""
+
+data = []
+R = R0
+strains = []
+Time_passed = 0       
+tau_counter = 0
+
+initialisation(300)
+print("Simulation started ---")
+#main_step(total_time, precision, i, function)
+wetseveredry_step(5*(10**6), 0.1, 8760, 50, lambda x, p : x)
+print(get_winner(data))
+plot_pop(data)
 
 plt.show()
 
